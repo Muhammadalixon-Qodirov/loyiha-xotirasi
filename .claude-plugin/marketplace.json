@@ -1,0 +1,14 @@
+{
+  "name": "loyiha-xotirasi",
+  "owner": { "name": "Muhammadalixon-Qodirov" },
+  "metadata": {
+    "description": "Claude Code uchun loyiha xotirasi: kod arxitekturasi va ish jurnalini repo ichida yuritadigan skill va hook'lar."
+  },
+  "plugins": [
+    {
+      "name": "loyiha-xotirasi",
+      "source": "./",
+      "description": "Kod arxitekturasi va ish jurnalini (ARCHITECTURE.md + PROGRESS.md) avtomatik yuritadigan skill va hook'lar."
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "name": "loyiha-xotirasi",
+  "version": "0.1.0",
+  "description": "Har loyihada docs/ARCHITECTURE.md va docs/PROGRESS.md ni yuritadi: kod arxitekturasi, qarorlar, nima qilindi va nima qoldi — har o'zgarishdan keyin yangilanadi.",
+  "author": { "name": "Muhammadalixon-Qodirov" },
+  "repository": "https://github.com/Muhammadalixon-Qodirov/loyiha-xotirasi",
+  "keywords": ["documentation", "architecture", "progress", "memory", "uzbek"]
+}
