@@ -1,6 +1,13 @@
 # Arxitektura — <Loyiha nomi>
 
-> Oxirgi yangilanish: YYYY-MM-DD. Holat va jurnal: [PROGRESS.md](PROGRESS.md)
+> Oxirgi yangilanish: YYYY-MM-DD. Holat va jurnal: [PROGRESS.md](PROGRESS.md).
+> Interaktiv kod xaritasi (bog'lanishlar, funksiyalar, zaif joylar): [ARCHITECTURE.html](ARCHITECTURE.html) · AI uchun: [architecture.json](architecture.json)
+
+## Zaif joylar (tasdiqlangan)
+
+| Daraja | Joy | Muammo | Holat |
+|---|---|---|---|
+| | | | |
 
 ## 1. Loyiha nima qiladi
 

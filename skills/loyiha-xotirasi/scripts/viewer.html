@@ -1,0 +1,393 @@
+<!doctype html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>__TITLE__ — kod xaritasi</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.30.2/cytoscape.min.js"></script>
+<style>
+:root {
+  --bg: #f7f7f5; --panel: #ffffff; --ink: #1d1d1b; --muted: #6b6b66; --line: #e3e2dd; --chip: #efeee9;
+  --accent: #2f6fdb; --high: #d64545; --medium: #d98a1c; --low: #8a8f98; --ok: #2e9b5f;
+  --py: #3b7bbf; --go: #1aa3b8; --ts: #7a5af0; --js: #c9a400; --dart: #1b8de0; --sql: #5f8f3e;
+  --table: #5f8f3e; --endpoint: #9b4dca; --edge: #b9b8b2;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #161615; --panel: #1f1f1d; --ink: #ecebe6; --muted: #9b9a94; --line: #34332f; --chip: #2a2a27;
+    --accent: #6a9cf0; --edge: #55544f;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #161615; --panel: #1f1f1d; --ink: #ecebe6; --muted: #9b9a94; --line: #34332f; --chip: #2a2a27;
+  --accent: #6a9cf0; --edge: #55544f;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+header { padding: 12px 16px; border-bottom: 1px solid var(--line); display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; }
+h1 { font-size: 17px; margin: 0; }
+.meta { color: var(--muted); font-size: 12px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { background: var(--chip); border-radius: 999px; padding: 2px 10px; font-size: 12px; white-space: nowrap; }
+.chip b { font-weight: 600; }
+.sev { display: inline-block; min-width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; vertical-align: middle; }
+.sev.high { background: var(--high); } .sev.medium { background: var(--medium); } .sev.low { background: var(--low); }
+input[type=search] { flex: 1 1 200px; max-width: 320px; padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); color: var(--ink); }
+main { display: flex; height: calc(100vh - 62px); min-height: 480px; }
+#graphwrap { flex: 1; position: relative; min-width: 0; }
+#cy { position: absolute; inset: 0; }
+#toolbar { position: absolute; top: 10px; left: 10px; z-index: 2; display: flex; flex-wrap: wrap; gap: 6px; }
+#toolbar label, #toolbar button { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 4px 9px; font-size: 12px; cursor: pointer; color: var(--ink); }
+#legend { position: absolute; bottom: 10px; left: 10px; z-index: 2; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; font-size: 11px; color: var(--muted); max-width: calc(100% - 20px); }
+#legend span { margin-right: 10px; white-space: nowrap; }
+.sw { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 4px; vertical-align: middle; }
+aside { width: 400px; max-width: 45vw; background: var(--panel); border-left: 1px solid var(--line); display: flex; flex-direction: column; }
+.tabs { display: flex; border-bottom: 1px solid var(--line); }
+.tabs button { flex: 1; background: none; border: 0; padding: 10px 6px; color: var(--muted); cursor: pointer; font-size: 13px; border-bottom: 2px solid transparent; }
+.tabs button.on { color: var(--ink); border-bottom-color: var(--accent); font-weight: 600; }
+#pane { overflow: auto; padding: 12px 14px 40px; flex: 1; }
+h2 { font-size: 15px; margin: 4px 0 6px; word-break: break-all; }
+h3 { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 16px 0 6px; }
+.desc { color: var(--ink); margin: 4px 0 8px; }
+.kv { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; font-size: 12px; color: var(--muted); }
+.kv b { color: var(--ink); font-weight: 500; }
+ul.list { list-style: none; margin: 0; padding: 0; }
+ul.list li { padding: 6px 0; border-bottom: 1px solid var(--line); cursor: pointer; }
+ul.list li:hover { background: var(--chip); }
+.small { font-size: 12px; color: var(--muted); }
+code { font: 12px ui-monospace, SFMono-Regular, Consolas, monospace; background: var(--chip); padding: 1px 4px; border-radius: 4px; word-break: break-all; }
+.risk { border-left: 3px solid var(--low); padding: 6px 8px; margin: 6px 0; background: var(--chip); border-radius: 0 6px 6px 0; cursor: pointer; }
+.risk.high { border-color: var(--high); } .risk.medium { border-color: var(--medium); }
+.risk.st-ok, .risk.st-fixed { opacity: .55; }
+.badge { font-size: 10px; padding: 1px 6px; border-radius: 999px; background: var(--line); color: var(--ink); margin-left: 4px; }
+.badge.claude { background: var(--accent); color: #fff; }
+.filters { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+.filters button { border: 1px solid var(--line); background: var(--panel); color: var(--ink); border-radius: 999px; padding: 2px 10px; font-size: 12px; cursor: pointer; }
+.filters button.on { background: var(--ink); color: var(--panel); }
+#nocy { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; color: var(--muted); padding: 20px; text-align: center; }
+@media (max-width: 760px) {
+  main { flex-direction: column; height: auto; }
+  #graphwrap { height: 60vh; flex: none; }
+  aside { width: 100%; max-width: none; border-left: 0; border-top: 1px solid var(--line); }
+}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1 id="title"></h1>
+    <div class="meta" id="meta"></div>
+  </div>
+  <div class="chips" id="stats"></div>
+  <input type="search" id="q" placeholder="Qidirish: modul, funksiya, endpoint…">
+</header>
+<main>
+  <div id="graphwrap">
+    <div id="cy"></div>
+    <div id="nocy">Graf kutubxonasi yuklanmadi (internet kerak). O'ng paneldagi ro'yxatlar ishlaydi.</div>
+    <div id="toolbar">
+      <button id="back" hidden>← Modullar</button>
+      <label><input type="checkbox" id="showEp"> Endpointlar</label>
+      <label><input type="checkbox" id="showTb" checked> Jadvallar</label>
+      <label><input type="checkbox" id="showTest"> Test modullari</label>
+      <label><input type="checkbox" id="showMig"> Migratsiyalar</label>
+      <button id="fit">Sig'dirish</button>
+    </div>
+    <div id="legend"></div>
+  </div>
+  <aside>
+    <div class="tabs">
+      <button data-tab="detail" class="on">Tafsilot</button>
+      <button data-tab="risks">Xavflar</button>
+      <button data-tab="api">API va jadvallar</button>
+    </div>
+    <div id="pane"></div>
+  </aside>
+</main>
+<script id="data" type="application/json">/*__DATA__*/null</script>
+<script>
+const D = JSON.parse(document.getElementById('data').textContent);
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const SEV = ['high', 'medium', 'low'];
+const SEV_UZ = {high: 'yuqori', medium: "o'rta", low: 'past'};
+const LANG_VAR = {python: '--py', go: '--go', typescript: '--ts', javascript: '--js', dart: '--dart', sql: '--sql'};
+
+const modById = Object.fromEntries(D.modules.map(m => [m.id, m]));
+const fnById = Object.fromEntries(D.functions.map(f => [f.id, f]));
+const active = r => r.status !== 'ok' && r.status !== 'fixed';
+const risksByMod = {}, risksByFn = {};
+for (const r of D.risks) {
+  (risksByMod[r.module] ||= []).push(r);
+  if (r.function) (risksByFn[r.file + ':' + r.function] ||= []).push(r);
+}
+const worst = list => { const a = (list || []).filter(active); for (const s of SEV) if (a.some(r => r.severity === s)) return s; return null; };
+const isTestMod = m => m.files.every(p => /(^|\/)(tests?|__tests__)\/|(^|\/)test_[^/]*\.py$|_test\.(py|go|dart)$|\.(test|spec)\.[jt]sx?$/.test(p));
+
+// ---------------------------------------------------------------- header
+$('#title').textContent = D.project.name;
+$('#meta').textContent = `yangilangan ${D.project.generated_at.replace('T', ' ')}${D.project.commit ? ' · commit ' + D.project.commit : ''}`;
+const S = D.summary;
+$('#stats').innerHTML = [
+  `<span class="chip"><b>${S.modules}</b> modul</span>`,
+  `<span class="chip"><b>${S.functions}</b> funksiya</span>`,
+  `<span class="chip"><b>${S.endpoints}</b> endpoint</span>`,
+  `<span class="chip"><b>${S.tables}</b> jadval</span>`,
+  `<span class="chip"><b>${S.lines.toLocaleString()}</b> qator</span>`,
+  ...SEV.map(s => `<span class="chip"><span class="sev ${s}"></span><b>${S.risks[s]}</b> ${SEV_UZ[s]}</span>`),
+].join('');
+
+// ---------------------------------------------------------------- graf
+let cy = null, view = 'modules';
+const hasCy = typeof cytoscape === 'function';
+if (!hasCy) $('#nocy').style.display = 'flex';
+
+function modElements() {
+  const showEp = $('#showEp').checked, showTb = $('#showTb').checked, showTest = $('#showTest').checked, showMig = $('#showMig').checked;
+  const els = [], ids = new Set();
+  for (const c of D.components || []) els.push({data: {id: 'comp:' + c.id, label: c.name, kind: 'component'}});
+  for (const m of D.modules) {
+    if (!showTest && isTestMod(m)) continue;
+    if (!showMig && /(^|\/)(migrations|alembic|versions)(\/|$)/.test(m.id)) continue;
+    ids.add(m.id);
+    els.push({data: {id: m.id, label: m.id.split('/').slice(-2).join('/'), kind: 'module', lang: m.lang,
+      size: 22 + Math.min(60, Math.sqrt(m.lines) * 1.3), risk: worst(risksByMod[m.id]) || 'none',
+      parent: m.component ? 'comp:' + m.component : undefined}});
+  }
+  if (showTb) for (const t of D.tables) { ids.add(t.id); els.push({data: {id: t.id, label: t.name, kind: 'table'}}); }
+  if (showEp) for (const e of D.endpoints) { ids.add(e.id); els.push({data: {id: e.id, label: e.method + ' ' + e.path, kind: 'endpoint'}}); }
+  for (const e of D.edges) {
+    if (!ids.has(e.from) || !ids.has(e.to) || e.from === e.to) continue;
+    els.push({data: {id: `${e.from}>${e.to}>${e.kind}`, source: e.from, target: e.to, kind: e.kind, w: e.weight}});
+  }
+  return els;
+}
+
+function fnElements(modId) {
+  const own = D.functions.filter(f => f.module === modId && f.kind !== 'class');
+  const ids = new Set(own.map(f => f.id)), els = [];
+  const add = (f, ext) => els.push({data: {id: f.id, label: f.qual, kind: ext ? 'extfn' : 'fn', module: f.module,
+    size: 16 + Math.min(30, f.fan_in * 3), risk: worst(risksByFn[f.id]) || 'none'}});
+  own.forEach(f => add(f, false));
+  const extra = new Map();
+  for (const f of D.functions) {
+    for (const c of f.calls) {
+      if (ids.has(f.id) && !ids.has(c) && fnById[c]) extra.set(c, fnById[c]);
+      if (!ids.has(f.id) && ids.has(c) && !f.test) extra.set(f.id, f);
+    }
+  }
+  [...extra.values()].slice(0, 80).forEach(f => add(f, true));
+  const all = new Set(els.map(e => e.data.id));
+  for (const f of D.functions) {
+    if (!all.has(f.id)) continue;
+    for (const c of f.calls) if (all.has(c) && c !== f.id) els.push({data: {id: f.id + '>' + c, source: f.id, target: c, kind: 'calls', w: 1}});
+  }
+  return els;
+}
+
+function style() {
+  const lang = l => css(LANG_VAR[l] || '--low');
+  return [
+    {selector: 'node', style: {'label': 'data(label)', 'font-size': 10, 'color': css('--ink'), 'text-valign': 'bottom', 'text-margin-y': 3,
+      'text-wrap': 'ellipsis', 'text-max-width': 120, 'background-color': css('--low'), 'border-width': 0}},
+    {selector: 'node[kind="module"]', style: {'width': 'data(size)', 'height': 'data(size)', 'background-color': e => lang(e.data('lang'))}},
+    {selector: 'node[kind="fn"], node[kind="extfn"]', style: {'width': 'data(size)', 'height': 'data(size)', 'background-color': css('--accent')}},
+    {selector: 'node[kind="extfn"]', style: {'background-color': css('--line'), 'color': css('--muted')}},
+    {selector: 'node[risk="high"]', style: {'border-width': 4, 'border-color': css('--high')}},
+    {selector: 'node[risk="medium"]', style: {'border-width': 3, 'border-color': css('--medium')}},
+    {selector: 'node[risk="low"]', style: {'border-width': 1.5, 'border-color': css('--low')}},
+    {selector: 'node[kind="table"]', style: {'shape': 'barrel', 'width': 30, 'height': 24, 'background-color': css('--table')}},
+    {selector: 'node[kind="endpoint"]', style: {'shape': 'round-tag', 'width': 18, 'height': 18, 'background-color': css('--endpoint'), 'font-size': 9}},
+    {selector: 'node[kind="component"]', style: {'background-opacity': .06, 'background-color': css('--accent'), 'border-width': 1,
+      'border-color': css('--line'), 'text-valign': 'top', 'font-weight': 600, 'font-size': 12, 'shape': 'round-rectangle', 'padding': 18}},
+    {selector: 'edge', style: {'width': e => 1 + Math.min(4, Math.log2(1 + e.data('w'))), 'line-color': css('--edge'), 'target-arrow-color': css('--edge'),
+      'target-arrow-shape': 'triangle', 'curve-style': 'bezier', 'arrow-scale': .8, 'opacity': .8}},
+    {selector: 'edge[kind="http"]', style: {'line-style': 'dashed', 'line-color': css('--endpoint'), 'target-arrow-color': css('--endpoint')}},
+    {selector: 'edge[kind="db"]', style: {'line-style': 'dotted', 'line-color': css('--table'), 'target-arrow-color': css('--table')}},
+    {selector: 'edge[kind="handles"]', style: {'line-color': css('--endpoint'), 'target-arrow-color': css('--endpoint'), 'opacity': .6}},
+    {selector: '.dim', style: {'opacity': .15}},
+    {selector: ':selected', style: {'overlay-color': css('--accent'), 'overlay-opacity': .2}},
+  ];
+}
+
+function draw(els) {
+  if (!hasCy) return;
+  if (cy) cy.destroy();
+  cy = cytoscape({container: $('#cy'), elements: els, style: style(), wheelSensitivity: .25, minZoom: .1, maxZoom: 3,
+    layout: {name: 'cose', animate: false, nodeRepulsion: () => 12000, idealEdgeLength: () => 90, nodeOverlap: 24, padding: 30,
+      nestingFactor: 1.4, gravity: 0.3, componentSpacing: 120, numIter: 2500}});
+  cy.on('tap', 'node', ev => {
+    const d = ev.target.data();
+    if (d.kind === 'module') showModule(d.id);
+    else if (d.kind === 'fn' || d.kind === 'extfn') showFunction(d.id);
+    else if (d.kind === 'table') showTable(d.id);
+    else if (d.kind === 'endpoint') showEndpoint(d.id);
+    focus(ev.target);
+  });
+  cy.on('tap', ev => { if (ev.target === cy) cy.elements().removeClass('dim'); });
+}
+function focus(node) {
+  if (!cy) return;
+  const hood = node.closedNeighborhood().union(node.ancestors());
+  cy.elements().addClass('dim'); hood.removeClass('dim');
+}
+function select(id) {
+  if (!cy) return;
+  const n = cy.getElementById(id);
+  if (n && n.length) { cy.elements().unselect(); n.select(); focus(n); cy.animate({center: {eles: n}, zoom: Math.max(cy.zoom(), 1)}, {duration: 250}); }
+}
+function showModules() { view = 'modules'; $('#back').hidden = true; draw(modElements()); }
+function showFnGraph(modId) { view = 'fn'; $('#back').hidden = false; draw(fnElements(modId)); }
+
+// ---------------------------------------------------------------- panel
+let tab = 'detail';
+document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => setTab(b.dataset.tab));
+function setTab(t) {
+  tab = t; document.querySelectorAll('.tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === t));
+  if (t === 'risks') renderRisks(); else if (t === 'api') renderApi(); else if (!$('#pane').dataset.detail) renderOverview();
+}
+const loc = (file, line) => `<code>${esc(file)}${line ? ':' + line : ''}</code>`;
+function riskHtml(r) {
+  return `<div class="risk ${r.severity} st-${esc(r.status)}" data-mod="${esc(r.module)}" data-fn="${esc(r.function ? r.file + ':' + r.function : '')}">
+    <div><span class="sev ${r.severity}"></span><b>${esc(r.title)}</b>${r.source === 'claude' ? '<span class="badge claude">Claude</span>' : ''}
+    ${r.status !== 'open' ? `<span class="badge">${esc(r.status)}</span>` : ''}</div>
+    <div class="small">${loc(r.file, r.line)}${r.function ? ' · ' + esc(r.function) : ''}</div>
+    ${r.snippet ? `<div class="small"><code>${esc(r.snippet)}</code></div>` : ''}
+    ${r.detail ? `<div class="small">${esc(r.detail)}</div>` : ''}
+    ${r.note ? `<div class="small">✎ ${esc(r.note)}</div>` : ''}</div>`;
+}
+function bindRisks() {
+  document.querySelectorAll('#pane .risk').forEach(el => el.onclick = () => {
+    const fn = el.dataset.fn, mod = el.dataset.mod;
+    if (view === 'fn' && fn && cy && cy.getElementById(fn).length) { select(fn); showFunction(fn); return; }
+    if (view !== 'modules') showModules();
+    select(mod); showModule(mod);
+  });
+}
+function renderOverview() {
+  const comps = (D.components || []).map(c => `<li><b>${esc(c.name)}</b><div class="small">${esc(c.description || '')}</div></li>`).join('');
+  const top = D.risks.filter(active).sort((a, b) => SEV.indexOf(a.severity) - SEV.indexOf(b.severity)).slice(0, 8);
+  $('#pane').innerHTML = `<h2>${esc(D.project.name)}</h2>
+    <p class="desc small">Doiralar — modullar (papkalar), rangi tili bo'yicha, kattaligi kod hajmiga qarab. Qizil/sariq hoshiya — xavfli joy bor.
+    Strelka — bog'liqlik (kim kimni chaqiradi/import qiladi). Modulni bosing.</p>
+    <div class="kv">${Object.entries(S.languages).map(([k, v]) => `<span>${esc(k)}</span><b>${v} fayl</b>`).join('')}</div>
+    ${comps ? `<h3>Komponentlar</h3><ul class="list">${comps}</ul>` : ''}
+    <h3>Eng muhim xavflar</h3>${top.map(riskHtml).join('') || '<p class="small">Topilmadi.</p>'}`;
+  bindRisks();
+}
+function depList(id, dir) {
+  const es = D.edges.filter(e => (dir === 'out' ? e.from === id : e.to === id) && e.kind !== 'handles');
+  if (!es.length) return '<p class="small">—</p>';
+  return '<ul class="list">' + es.sort((a, b) => b.weight - a.weight).slice(0, 30).map(e => {
+    const other = dir === 'out' ? e.to : e.from;
+    return `<li data-go="${esc(other)}"><span class="small">${esc(e.kind)} ×${e.weight}</span> ${esc(other)}</li>`;
+  }).join('') + '</ul>';
+}
+function bindGo() {
+  document.querySelectorAll('#pane [data-go]').forEach(el => el.onclick = () => {
+    const id = el.dataset.go;
+    if (modById[id]) { if (view !== 'modules') showModules(); select(id); showModule(id); }
+    else if (id.startsWith('table:')) { select(id); showTable(id); }
+    else if (id.startsWith('endpoint:')) { $('#showEp').checked = true; showModules(); select(id); showEndpoint(id); }
+    else if (fnById[id]) showFunction(id);
+  });
+}
+function showModule(id) {
+  const m = modById[id]; if (!m) return;
+  setTab('detail'); $('#pane').dataset.detail = id;
+  const fns = D.functions.filter(f => f.module === id && f.kind !== 'class')
+    .sort((a, b) => (SEV.indexOf(worst(risksByFn[b.id]) ?? '') - SEV.indexOf(worst(risksByFn[a.id]) ?? '')) || b.fan_in - a.fan_in);
+  const eps = D.endpoints.filter(e => e.module === id || e.handler_module === id);
+  $('#pane').innerHTML = `<h2>${esc(m.id)}</h2>
+    ${m.description ? `<p class="desc">${esc(m.description)}</p>` : '<p class="small">Izoh yo\'q (Claude architecture.notes.json ga yozadi).</p>'}
+    <div class="kv"><span>til</span><b>${esc(m.lang)}</b><span>fayllar</span><b>${m.files.length}</b><span>qatorlar</span><b>${m.lines}</b>
+    <span>funksiyalar</span><b>${m.functions}</b><span>testlar</span><b>${m.tests ? 'bor' : 'topilmadi'}</b>
+    <span>bog'liq modullar</span><b>${m.fan_out} ga bog'liq · ${m.fan_in} tasi bunga bog'liq</b></div>
+    <p><button id="fngraph">Funksiyalar grafigi →</button></p>
+    ${(risksByMod[id] || []).length ? `<h3>Xavflar</h3>${risksByMod[id].map(riskHtml).join('')}` : ''}
+    ${eps.length ? `<h3>Endpointlar</h3><ul class="list">${eps.map(e => `<li data-go="${esc(e.id)}"><b>${esc(e.method)}</b> ${esc(e.path)}</li>`).join('')}</ul>` : ''}
+    <h3>Funksiyalar</h3><ul class="list">${fns.slice(0, 200).map(f => `<li data-go="${esc(f.id)}">
+      ${worst(risksByFn[f.id]) ? `<span class="sev ${worst(risksByFn[f.id])}"></span>` : ''}<b>${esc(f.qual)}</b>
+      <span class="small">${f.lines} qator · ${f.fan_in} joydan chaqiriladi</span></li>`).join('')}</ul>
+    <h3>Nimaga bog'liq</h3>${depList(id, 'out')}<h3>Kim bunga bog'liq</h3>${depList(id, 'in')}
+    <h3>Fayllar</h3><ul class="list">${m.files.map(p => `<li class="small">${esc(p)}</li>`).join('')}</ul>`;
+  $('#fngraph').onclick = () => showFnGraph(id);
+  bindRisks(); bindGo();
+}
+function showFunction(id) {
+  const f = fnById[id]; if (!f) return;
+  setTab('detail'); $('#pane').dataset.detail = id;
+  const callers = D.functions.filter(x => x.calls.includes(id));
+  $('#pane').innerHTML = `<p class="small" data-go="${esc(f.module)}" style="cursor:pointer">← ${esc(f.module)}</p>
+    <h2>${esc(f.qual)}</h2>${f.description ? `<p class="desc">${esc(f.description)}</p>` : ''}
+    <div class="kv"><span>joyi</span><b>${loc(f.file, f.line)}</b><span>turi</span><b>${esc(f.kind)}</b>
+    <span>hajmi</span><b>${f.lines} qator</b><span>chaqiruvchilar</span><b>${f.fan_in}</b></div>
+    ${(risksByFn[id] || []).length ? `<h3>Xavflar</h3>${risksByFn[id].map(riskHtml).join('')}` : ''}
+    <h3>Chaqiradi</h3><ul class="list">${f.calls.map(c => `<li data-go="${esc(c)}">${esc(fnById[c]?.qual || c)} <span class="small">${esc(fnById[c]?.module || '')}</span></li>`).join('') || '<li class="small">—</li>'}</ul>
+    <h3>Kim chaqiradi</h3><ul class="list">${callers.slice(0, 60).map(c => `<li data-go="${esc(c.id)}">${esc(c.qual)} <span class="small">${esc(c.module)}</span></li>`).join('') || '<li class="small">—</li>'}</ul>`;
+  bindRisks(); bindGo();
+}
+function showTable(id) {
+  const t = D.tables.find(x => x.id === id); if (!t) return;
+  setTab('detail'); $('#pane').dataset.detail = id;
+  $('#pane').innerHTML = `<h2>🗄 ${esc(t.name)}</h2><div class="kv"><span>ta'riflangan</span><b>${loc(t.defined_in)}</b></div>
+    <h3>Ishlatadigan modullar</h3><ul class="list">${t.used_by.map(m => `<li data-go="${esc(m)}">${esc(m)}</li>`).join('') || '<li class="small">—</li>'}</ul>`;
+  bindGo();
+}
+function showEndpoint(id) {
+  const e = D.endpoints.find(x => x.id === id); if (!e) return;
+  setTab('detail'); $('#pane').dataset.detail = id;
+  const callers = D.edges.filter(x => x.to === id && x.kind === 'http').map(x => x.from);
+  $('#pane').innerHTML = `<h2>${esc(e.method)} ${esc(e.path)}</h2><div class="kv"><span>marshrut</span><b>${loc(e.file, e.line)}</b>
+    <span>handler</span><b>${e.handler ? `<span data-go="${esc(e.handler)}" style="cursor:pointer">${esc(fnById[e.handler]?.qual || e.handler)}</span>` : 'aniqlanmadi'}</b></div>
+    <h3>Chaqiruvchi modullar (frontend)</h3><ul class="list">${callers.map(m => `<li data-go="${esc(m)}">${esc(m)}</li>`).join('') || '<li class="small">topilmadi</li>'}</ul>`;
+  bindGo();
+}
+let riskFilter = 'all';
+function renderRisks() {
+  delete $('#pane').dataset.detail;
+  const list = D.risks.filter(r => riskFilter === 'all' ? active(r) : riskFilter === 'reviewed' ? !active(r) : r.severity === riskFilter && active(r))
+    .sort((a, b) => SEV.indexOf(a.severity) - SEV.indexOf(b.severity));
+  $('#pane').innerHTML = `<div class="filters">${[['all', 'Hammasi'], ['high', 'Yuqori'], ['medium', "O'rta"], ['low', 'Past'], ['reviewed', "Ko'rib chiqilgan"]]
+    .map(([k, l]) => `<button data-f="${k}" class="${riskFilter === k ? 'on' : ''}">${l}</button>`).join('')}</div>
+    <p class="small">Avtomatik topilgan xavf — taxmin. "Claude" belgisi — kodni o'qib tasdiqlangan yoki qo'shilgan.</p>
+    ${list.map(riskHtml).join('') || '<p class="small">Bu filtr bo\'yicha xavf yo\'q.</p>'}`;
+  document.querySelectorAll('.filters button').forEach(b => b.onclick = () => { riskFilter = b.dataset.f; renderRisks(); });
+  bindRisks();
+}
+function renderApi() {
+  delete $('#pane').dataset.detail;
+  $('#pane').innerHTML = `<h3>Endpointlar (${D.endpoints.length})</h3><ul class="list">${D.endpoints.map(e =>
+      `<li data-go="${esc(e.id)}"><b>${esc(e.method)}</b> ${esc(e.path)} <span class="small">${esc(e.file)}</span></li>`).join('') || '<li class="small">topilmadi</li>'}</ul>
+    <h3>Jadvallar (${D.tables.length})</h3><ul class="list">${D.tables.map(t =>
+      `<li data-go="${esc(t.id)}">🗄 ${esc(t.name)} <span class="small">${t.used_by.length} modul ishlatadi</span></li>`).join('') || '<li class="small">topilmadi</li>'}</ul>`;
+  bindGo();
+}
+
+// ---------------------------------------------------------------- qidiruv, boshqaruv
+$('#q').oninput = () => {
+  const q = $('#q').value.trim().toLowerCase();
+  if (!q) { setTab(tab); return; }
+  const mods = D.modules.filter(m => m.id.toLowerCase().includes(q)).slice(0, 20);
+  const fns = D.functions.filter(f => f.qual.toLowerCase().includes(q)).slice(0, 40);
+  const eps = D.endpoints.filter(e => (e.method + ' ' + e.path).toLowerCase().includes(q)).slice(0, 20);
+  $('#pane').dataset.detail = 'search';
+  $('#pane').innerHTML = `<h3>Modullar</h3><ul class="list">${mods.map(m => `<li data-go="${esc(m.id)}">${esc(m.id)}</li>`).join('') || '<li class="small">—</li>'}</ul>
+    <h3>Funksiyalar</h3><ul class="list">${fns.map(f => `<li data-go="${esc(f.id)}">${esc(f.qual)} <span class="small">${esc(f.file)}:${f.line}</span></li>`).join('') || '<li class="small">—</li>'}</ul>
+    <h3>Endpointlar</h3><ul class="list">${eps.map(e => `<li data-go="${esc(e.id)}">${esc(e.method)} ${esc(e.path)}</li>`).join('') || '<li class="small">—</li>'}</ul>`;
+  bindGo();
+};
+['#showEp', '#showTb', '#showTest', '#showMig'].forEach(s => $(s).onchange = () => view === 'modules' && showModules());
+$('#fit').onclick = () => cy && cy.fit(undefined, 30);
+$('#back').onclick = showModules;
+$('#legend').innerHTML = Object.entries(LANG_VAR).filter(([l]) => S.languages[l])
+  .map(([l, v]) => `<span><i class="sw" style="background:var(${v})"></i>${l}</span>`).join('') +
+  `<span><i class="sw" style="background:var(--table)"></i>jadval</span><span><i class="sw" style="background:var(--endpoint)"></i>endpoint / http</span>` +
+  `<span><i class="sw" style="border:2px solid var(--high)"></i>xavf</span>`;
+
+showModules();
+renderOverview();
+</script>
+</body>
+</html>
